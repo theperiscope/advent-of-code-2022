@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "day04": {
+      "commandName": "Project",
+      "commandLineArgs": "input-short.txt"
+    }
+  }
+}

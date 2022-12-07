@@ -18,41 +18,33 @@ internal class Program
         }
 
         var data = System.IO.File.ReadAllLines(args[0]);
-
         Directory root = BuildFileSystem(data);
+
         Part1(root);
         Part2(root);
     }
 
     private static Directory BuildFileSystem(string[] data)
     {
-        Directory root = null;
-        Directory currentDir = null;
+        var currentDir = new Directory(string.Empty) { Parent = null };
+        var root = currentDir;
         for (var i = 0; i < data.Length; i++) {
-            if (data[i].StartsWith("$ cd")) { // command
-                var dir = data[i].Substring(5);
-                if (dir == "/") {
-                    currentDir = new Directory(string.Empty) { Parent = null };
-                    root = currentDir;
-                } else if (dir == "..") {
-                    if (currentDir == null || currentDir.Parent == null)
-                        throw new InvalidOperationException();
-                    currentDir = currentDir.Parent;
-                } else {
-                    currentDir = currentDir.Directories.First(d => d.Name == dir);
-                }
-            } else if (data[i] == "$ ls") {
-            } else if (data[i].StartsWith("dir")) {
-                var dir = data[i].Substring(4);
-                if (currentDir == null)
-                    throw new InvalidOperationException();
+            var row = data[i];
+            // "$ ls" command does nothing of value so it is not included below
+            if (row == "$ cd /") {
+                currentDir = root;
+            } else if (row == "$ cd ..") {
+                var dir = row[5..];
+                currentDir = currentDir.Parent!;
+            } else if (row.StartsWith("$ cd") && row.IndexOf('/') == -1) { // not-root cd
+                var dir = row[5..];
+                currentDir = currentDir.Directories.First(d => d.Name == dir);
+            } else if (row.StartsWith("dir")) {
+                var dir = row[4..];
                 currentDir.Directories.Add(new Directory(dir) { Parent = currentDir });
-            } else if (data[i][0] is >= '0' and <= '9') {
-                var fileSize = long.Parse(data[i].Substring(0, data[i].IndexOf(' ')));
-                var fileName = data[i].Substring(data[i].IndexOf(' ') + 1);
-                if (currentDir == null)
-                    throw new InvalidOperationException();
-                currentDir.Files.Add(new File(currentDir, fileName, fileSize));
+            } else if (row[0] is >= '0' and <= '9') {
+                var space = row.IndexOf(' ');
+                currentDir.Files.Add(new File(currentDir, row[(space + 1)..], long.Parse(row[..space])));
             }
         }
         return root;
@@ -60,59 +52,34 @@ internal class Program
 
     private static void Part1(Directory root)
     {
-        Console.WriteLine(SearchFolders100KOrLess(root));
-    }
-
-    private static long SearchFolders100KOrLess(Directory root)
-    {
-        var total = 0L;
-        var totalFileSize = SearchFiles(root).Select(x => x.Size).Sum();
-        if (totalFileSize <= 100_000) {
-            total += totalFileSize;
-        }
-        foreach (var dir in root.Directories) {
-            total += SearchFolders100KOrLess(dir);
-        }
-        return total;
-    }
-
-    private static List<File> SearchFiles(Directory root)
-    {
-        if (root == null)
-            return new List<File>();
-
-        var list = new List<File>();
-        list.AddRange(root.Files);
-        foreach (var dir in root.Directories) {
-            var files = SearchFiles(dir);
-            if (files.Count > 0)
-                list.AddRange(files);
-        }
-
-        return list;
+        Console.WriteLine(FindFolders(root, 0).Where(x => x.Value <= 100_000).Sum(x => x.Value));
     }
 
     private static void Part2(Directory root)
     {
-        var allFilesSize = SearchFiles(root).Select(x => x.Size).Sum();
+        var allFilesSize = FindAllFiles(root).Select(x => x.Size).Sum();
         var availableSpace = DISKSIZE - allFilesSize;
         var needToFree = TARGETFREESPACE - availableSpace;
-        Console.WriteLine(SearchFolders(root, needToFree).Min(x => x.Value));
+        Console.WriteLine(FindFolders(root, needToFree).Min(x => x.Value));
     }
 
-    private static Dictionary<Directory, long> SearchFolders(Directory root, long minimumSize)
+    private static List<File> FindAllFiles(Directory root)
+    {
+        var list = new List<File>(root.Files);
+        foreach (var dir in root.Directories)
+            list.AddRange(FindAllFiles(dir));
+        return list;
+    }
+
+    private static Dictionary<Directory, long> FindFolders(Directory root, long minimumSize)
     {
         var candidates = new Dictionary<Directory, long>();
-        var files = SearchFiles(root);
-        var totalFileSize = files.Select(x => x.Size).Sum();
-        if (totalFileSize >= minimumSize) {
+        var totalFileSize = FindAllFiles(root).Select(x => x.Size).Sum();
+        if (totalFileSize >= minimumSize)
             candidates.Add(root, totalFileSize);
-        }
         foreach (var dir in root.Directories) {
-            var results = SearchFolders(dir, minimumSize);
-            foreach (var result in results) {
+            foreach (var result in FindFolders(dir, minimumSize))
                 candidates.Add(result.Key, result.Value);
-            }
         }
         return candidates;
     }

@@ -12,81 +12,24 @@ internal class Program
             return;
         }
 
-        var data = System.IO.File.ReadAllLines(args[0]);
+        var data = File.ReadAllLines(args[0]);
 
         var arr = new List<List<char>>();
         for (var i = 0; i < data.Length; i++) {
             var row = data[i];
             arr.Add(new List<char>(row.AsEnumerable()));
         }
-        Part1(arr);
-        Part2(arr);
-    }
 
-    private static void Part1(List<List<char>> data)
-    {
-        var n = 2 * (data.Count + data[0].Count - 2);
-        for (var row = 1; row < data.Count - 1; row++) {
-            for (var col = 1; col < data[row].Count - 1; col++) {
-                var x = data[row][col] - '0';
-
-                var isVisibleTop = true;
-                for (var k = row - 1; k >= 0; k--) {
-                    var y = data[k][col] - '0';
-                    if (y >= x) {
-                        isVisibleTop = false;
-                        break;
-                    }
-                }
-
-                var isVisibleBottom = true;
-                for (var k = row + 1; k <= data.Count - 1; k++) {
-                    var y = data[k][col] - '0';
-                    if (y >= x) {
-                        isVisibleBottom = false;
-                        break;
-                    }
-                }
-
-                var isVisibleLeft = true;
-                for (var k = col - 1; k >= 0; k--) {
-                    var y = data[row][k] - '0';
-                    if (y >= x) {
-                        isVisibleLeft = false;
-                        break;
-                    }
-                }
-
-                var isVisibleRight = true;
-                for (var k = col + 1; k <= data[row].Count - 1; k++) {
-                    var y = data[row][k] - '0';
-                    if (y >= x) {
-                        isVisibleRight = false;
-                        break;
-                    }
-                }
-
-                var isVisible = isVisibleTop || isVisibleBottom || isVisibleLeft || isVisibleRight;
-                if (isVisible) {
-                    n++;
-                }
-            }
-        }
-
-        Console.WriteLine(n);
-    }
-
-    private static void Part2(List<List<char>> data)
-    {
+        var n = 0;
         var maxScore = 0;
-        for (var row = 0; row < data.Count; row++) {
-            for (var col = 0; col < data[row].Count; col++) {
-                var x = data[row][col] - '0';
+        for (var row = 0; row < arr.Count; row++) {
+            for (var col = 0; col < arr[row].Count; col++) {
+                var x = arr[row][col];
 
                 var isVisibleTop = true;
                 var nT = 0;
                 for (var k = row - 1; k >= 0; k--) {
-                    var y = data[k][col] - '0';
+                    var y = arr[k][col];
                     if (y >= x) {
                         isVisibleTop = false;
                         nT = Math.Abs(row - k);
@@ -98,8 +41,8 @@ internal class Program
 
                 var isVisibleBottom = true;
                 var nB = 0;
-                for (var k = row + 1; k <= data.Count - 1; k++) {
-                    var y = data[k][col] - '0';
+                for (var k = row + 1; k <= arr.Count - 1; k++) {
+                    var y = arr[k][col];
                     if (y >= x) {
                         isVisibleBottom = false;
                         nB = Math.Abs(row - k);
@@ -107,12 +50,12 @@ internal class Program
                     }
                 }
                 if (isVisibleBottom)
-                    nB = data.Count - row - 1;
+                    nB = arr.Count - row - 1;
 
                 var isVisibleLeft = true;
                 var nL = 0;
                 for (var k = col - 1; k >= 0; k--) {
-                    var y = data[row][k] - '0';
+                    var y = arr[row][k];
                     if (y >= x) {
                         isVisibleLeft = false;
                         nL = Math.Abs(col - k);
@@ -124,8 +67,8 @@ internal class Program
 
                 var isVisibleRight = true;
                 var nR = 0;
-                for (var k = col + 1; k <= data[row].Count - 1; k++) {
-                    var y = data[row][k] - '0';
+                for (var k = col + 1; k <= arr[row].Count - 1; k++) {
+                    var y = arr[row][k];
                     if (y >= x) {
                         isVisibleRight = false;
                         nR = Math.Abs(col - k);
@@ -133,7 +76,12 @@ internal class Program
                     }
                 }
                 if (isVisibleRight)
-                    nR = data[row].Count - col - 1;
+                    nR = arr[row].Count - col - 1;
+
+                var isVisible = isVisibleTop || isVisibleBottom || isVisibleLeft || isVisibleRight;
+                if (isVisible) {
+                    n++;
+                }
 
                 var score = nT * nB * nL * nR;
                 if (score > maxScore) {
@@ -142,6 +90,7 @@ internal class Program
             }
         }
 
-        Console.WriteLine(maxScore);
+        Console.WriteLine($"Part 1: {n}");
+        Console.WriteLine($"Part 2: {maxScore}");
     }
 }

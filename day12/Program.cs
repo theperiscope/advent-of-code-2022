@@ -15,8 +15,8 @@ internal class Program
         var data = File.ReadAllLines(args[0]);
 
         Point start = new(0, 0), end = new(0, 0);
-        var allAs = new List<Point>();
-        var grid = new int[data.Length + 2, data[0].Length + 2]; // borders (0s) to make neighbors more readable
+        var allAs = new List<Point>(); // needed for part 2
+        var grid = new int[data.Length + 2, data[0].Length + 2]; // borders (0s) to make getting neighbors more readable
         for (var i = 0; i < data.Length; i++) {
             for (var j = 0; j < data[0].Length; j++) {
                 if (data[i][j] == 'S')
@@ -32,15 +32,7 @@ internal class Program
 
         Console.WriteLine($"Part 1: {BFS(grid, start, end)(end).Count - 1} steps");
 
-        var minSteps = int.MaxValue;
-        foreach (var startA in allAs) {
-            var steps = BFS(grid, startA, end)(end).Count - 1;
-            if (steps == -1) // bad path
-                continue;
-
-            if (steps < minSteps) minSteps = steps;
-        }
-
+        var minSteps = allAs.Select(startA => BFS(grid, startA, end)(end).Count - 1).Where(x => x != -1).Min();
         Console.WriteLine($"Part 2: {minSteps} steps");
     }
 
@@ -50,47 +42,42 @@ internal class Program
     private static Func<Point, IList<Point>> BFS(int[,] grid, Point start, Point end)
     {
         var previous = new Dictionary<Point, Point>();
-        var path = new HashSet<Point>();
-
         var queue = new Queue<Point>();
-        queue.Enqueue(start);
 
+        queue.Enqueue(start);
         while (queue.Count > 0) {
             var point = queue.Dequeue();
-
             var adjustedPoint = point + offset;
             var neighbors = neighborCandidates.Select(x => x + adjustedPoint).Where(x => grid[x.Row, x.Col] != 0).ToList();
-            foreach (var neighbor in neighbors) {
-                if (previous.ContainsKey(neighbor - offset))
-                    continue;
 
-                if (grid[neighbor.Row, neighbor.Col] - grid[adjustedPoint.Row, adjustedPoint.Col] > 1)
+            foreach (var neighbor in neighbors) {
+                if (previous.ContainsKey(neighbor - offset) ||
+                    grid[neighbor.Row, neighbor.Col] - grid[adjustedPoint.Row, adjustedPoint.Col] > 1)
                     continue;
 
                 previous[neighbor - offset] = point;
-
                 queue.Enqueue(neighbor - offset);
             }
         }
 
-        Func<Point, IList<Point>> shortestPath = v => {
-            var path = new List<Point> { };
+        IList<Point> shortestPath(Point end)
+        {
+            var path = new List<Point>();
+            var current = end;
 
-            var current = v;
             while (!current.Equals(start)) {
                 path.Add(current);
-                
+
                 if (!previous.ContainsKey(current)) // bad path
                     return new List<Point>();
-                
+
                 current = previous[current];
-            };
+            }
 
             path.Add(start);
             path.Reverse();
-
             return path;
-        };
+        }
 
         return shortestPath;
     }
@@ -109,9 +96,4 @@ internal record Point
 
     public static Point operator +(Point a, Point b) => new(a.Row + b.Row, a.Col + b.Col);
     public static Point operator -(Point a, Point b) => new(a.Row - b.Row, a.Col - b.Col);
-
-    public override string ToString()
-    {
-        return $"({Row},{Col})";
-    }
 }

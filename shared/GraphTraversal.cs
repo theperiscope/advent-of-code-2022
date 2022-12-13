@@ -26,6 +26,48 @@ public class GraphTraversal
         return distances;
     }
 
+    public static (Dictionary<int, int> distances, Dictionary<int, int> parents) DijkstraWithPaths(Dictionary<int, List<WeightedNode>> graph, int source)
+    {
+        var (distances, vertices) = (new Dictionary<int, int>(graph.Count), graph.Keys.ToList());
+        for (int i = 0; i < vertices.Count; i++)
+            distances[vertices[i]] = Int32.MaxValue;
+
+        var parents = new Dictionary<int, int>();
+
+        distances[source] = 0;
+        parents[source] = -1; //todo
+
+        var pq = new SortedSet<WeightedNode> { new(source, 0) };
+        while (pq.Count > 0) {
+            var current = pq.First();
+            pq.Remove(current);
+
+            foreach (var neighbor in graph[current.Vertex]) {
+                var proposal = distances[current.Vertex] + neighbor.Weight;
+                if (proposal < distances[neighbor.Vertex]) {
+                    distances[neighbor.Vertex] = proposal;
+                    parents[neighbor.Vertex] = current.Vertex;
+                    pq.Add(new(neighbor.Vertex, distances[neighbor.Vertex]));
+                }
+            }
+        }
+
+        return (distances, parents);
+    }
+
+    public static string GetFriendlyPath(int endVertex, Dictionary<int, int> parents)
+    {
+        var p = endVertex;
+        var path = new List<int>();
+        do {
+            path.Add(p);
+            p = parents[p];
+        } while (p != -1);
+        path.Reverse();
+        
+        return string.Join(" -> ", path);
+    }
+
     public static void DijkstraDemo()
     {
         var graph = new Dictionary<int, List<WeightedNode>>
@@ -42,9 +84,9 @@ public class GraphTraversal
             {10, new() { new (8,10) } }
         };
 
-        var distance = Dijkstra(graph, 0);
-        foreach (var vertex in distance) {
-            Console.WriteLine("{0}: {1}", vertex.Key, distance[vertex.Key]);
+        var (distances, parents) = DijkstraWithPaths(graph, 0);
+        foreach (var vertex in distances) {
+            Console.WriteLine("{0,3}:\t{1,3}\t{2}", vertex.Key, distances[vertex.Key], GetFriendlyPath(vertex.Key, parents));
         }
     }
 }

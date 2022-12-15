@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 
 namespace day15;
 
@@ -10,7 +11,7 @@ internal class Program
     public static void Main(string[] args)
     {
         if (args.Length != 3) {
-            Console.WriteLine("Usage: {0} <file> <n> <mapSize>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
+            Console.WriteLine("Usage: {0} <file> <rowNumber> <mapSize>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
             return;
         }
 
@@ -28,30 +29,27 @@ internal class Program
         Console.WriteLine(Part2(data, int.Parse(args[2])));
     }
 
-    private static int Part1(List<(Point sensor, Point beacon)> data, int n)
+    private static int Part1(List<(Point sensor, Point beacon)> data, int row)
     {
         var xs = new List<Interval>();
-        foreach (var x in data) {
-            var coveredXs = CoveredXs(x, n);
+        foreach (var sensorBeacon in data) {
+            var coveredXs = CoveredXs(sensorBeacon, row);
             if (coveredXs != null)
                 xs.Add(coveredXs);
         }
 
         var beacons = data
-            .Where(x => x.beacon.Y == n).Select(x => x.beacon.X)
-            .Distinct().Count();
+            .Where(x => x.beacon.Y == row).Select(x => x.beacon.X)
+            .Distinct().Count(); // distinct as there are overlapping beacons
 
-        xs = Interval.Merge(xs);
-        var sum = 0;
-        foreach (var interval in xs) {
-            sum += interval.End - interval.Start + 1;
-        }
-        return sum - beacons;
+        return Interval.Merge(xs).Sum(i => i.End - i.Start + 1) - beacons;
     }
 
     private static long Part2(List<(Point sensor, Point beacon)> data, int mapSize)
     {
-        for (var n = 0; n <= mapSize; n++) {
+        var (list, q) = (Enumerable.Range(0, mapSize + 1).ToList(), new ConcurrentQueue<long>());
+
+        Parallel.ForEach(list, (n, state) => {
             var xs = new List<Interval>();
             foreach (var x in data) {
                 var coveredXs = CoveredXs(x, n);
@@ -59,22 +57,22 @@ internal class Program
                     xs.Add(coveredXs);
             }
             xs = Interval.Merge(xs);
-            // for only one value of n we expect two intervals, otherwise they should be all 1
+            // for only one value of row we expect two intervals, otherwise they should be all 1
             // the missing number is at the end of first interval plus one (or second's start minus one)
             if (xs.Count == 2) {
                 xs.Sort();
-                return 4_000_000L * (xs[0].End + 1) + n;
+                q.Enqueue(4_000_000L * (xs[0].End + 1) + n);
+                state.Stop();
             }
-        }
+        });
 
-        return long.MinValue;
-        ;
+        q.TryDequeue(out var result);
+        return result;
     }
 
     private static Interval? CoveredXs((Point sensor, Point beacon) s, int n)
     {
         var coverageAtRow = Math.Max(0, (s.sensor.ManhattanDistanceTo(s.beacon) + 1) * 2 - 1 - (Math.Abs(s.sensor.Y - n) * 2));
-
         if (coverageAtRow <= 0)
             return null;
 
@@ -110,12 +108,10 @@ public record Interval : IComparable<Interval>
             return new List<Interval>();
 
         var s = new Stack<Interval>();
-
         intervals.Sort();
         s.Push(intervals[0]);
         for (var i = 1; i < intervals.Count; i++) {
             var top = s.Peek();
-
             if (top.End < intervals[i].Start) {
                 s.Push(intervals[i]);
             } else if (top.End < intervals[i].End) {
@@ -125,11 +121,7 @@ public record Interval : IComparable<Interval>
             }
         }
 
-        var l = new List<Interval>();
-        while (s.Any()) {
-            l.Add(s.Pop());
-        }
-        return l;
+        return s.ToList();
     }
 }
 

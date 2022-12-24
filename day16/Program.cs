@@ -1,132 +1,87 @@
-﻿Run(@"input-short.txt", true);
-//Run(@"input.txt", false);
+﻿using System.Text.RegularExpressions;
 
-void Run(string inputfile, bool isTest)
+/// <summary>
+/// Proboscidea Volcanium
+/// </summary>
+internal class Program
 {
-    var S = File.ReadAllLines(inputfile).ToList();
-    long answer1 = 0;
-    long answer2 = 0;
+    private static void Main(string[] args)
+    {
+        if (args.Length != 1) {
+            Console.WriteLine("Usage: {0} <file>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
+            return;
+        }
 
-    var valves = new Dictionary<string, Valve>();
+        var input = File.ReadLines(args[0]).ToList();
+        var inputRegex = new Regex(@"Valve ([A-Z]{2}).*rate=(\d+);.*to\svalve[s]*\s(.*)", RegexOptions.Compiled);
+        var valves = input.Select(line => inputRegex.Match(line)).Select(m => new Valve(m.Groups[1].Value, int.Parse(m.Groups[2].Value), m.Groups[3].Value.Split(", "), new Dictionary<string, int>())).ToDictionary(v => v.Name, v => v);
+        valves = valves.Select(v => new Valve(v.Value.Name, v.Value.FlowRate, v.Value.LeadsTo, FindShortestTimes(v.Value, valves))).ToDictionary(v => v.Name, v => v);
+        var usefulValves = valves.Where(v => v.Value.FlowRate > 0).ToDictionary(v => v.Value.Name, v => v.Value);
 
-    int i = 0;
-    while (i < S.Count) {
-        var s = S[i];
-        var t = s.Split(' ');
-        var r = int.Parse(t[4].Split('=')[1][0..^1]);
-        var v = new Valve(t[1], r, t[9..].Select(a => a[0..2]).ToArray());
-        valves[v.Name] = v;
-        i++;
+        var answer1 = CalculateBestReleasedPressure(30, valves["AA"], usefulValves);
+        Console.WriteLine($"Part 1: {answer1}");
+
+        var answer2 = CalculateCombinedBestReleasedPressure(new[] { 26, 26 }, new[] { valves["AA"], valves["AA"] }, usefulValves);
+        Console.WriteLine($"Part 2: {answer2}");
     }
 
-    calculateshortestpath(valves);
-
-    var cur = valves["AA"];
-
-    // answer1 = CalculateGain(cur, 30, new string[] { }, valves);
-    var useFullValves = valves.Values.Where(v => v.Release > 0).Select(v => (v.Name, v.Release)).ToArray();
-    answer1 = GetReleasedPressure(30, useFullValves, "AA", valves);
-    answer2 = GetReleasedPressureTogether(new int[] { 26, 26 }, useFullValves, new string[] { "AA", "AA" }, valves);
-
-    Console.WriteLine(answer1);
-    Console.WriteLine(answer2);
-}
-void calculateshortestpath(Dictionary<string, Valve> valves)
-{
-    foreach (var v in valves.Values) {
-        string target = v.Name;
-        Valve cur = valves[target];
-        cur.shortestpath[target] = 0;
-        SpToTarget(valves, cur, target);
-    }
-}
-
-void SpToTarget(Dictionary<string, Valve> valves, Valve current, string target)
-{
-    var visited = new HashSet<string>();
-
-    while (current != null && visited.Count < valves.Count) {
-        visited.Add(current.Name);
-        int distance = current.shortestpath[target] + 1;
-        foreach (var t in current.Tunnels) {
-            if (!visited.Contains(t)) {
-                var c = valves[t];
-                if (c.shortestpath.ContainsKey(target)) {
-                    if (distance < c.shortestpath[target])
-                        c.shortestpath[target] = distance;
-                } else
-                    c.shortestpath[target] = distance;
+    private static int CalculateBestReleasedPressure(int timeLeft, Valve currentValve, Dictionary<string, Valve> usefulValves)
+    {
+        var best = 0;
+        foreach (var v in usefulValves) {
+            var newTimeLeft = timeLeft - currentValve.ShortestTimeTo[v.Key] - 1;
+            if (newTimeLeft > 0) {
+                var proposed = newTimeLeft * v.Value.FlowRate + CalculateBestReleasedPressure(newTimeLeft, v.Value, usefulValves.Where(c => c.Value != v.Value).ToDictionary(c => c.Key, c => c.Value));
+                if (proposed > best)
+                    best = proposed;
             }
         }
-        current = valves.Values.Where(c => !visited.Contains(c.Name) && c.shortestpath.ContainsKey(target)).OrderBy(c => c.shortestpath[target]).FirstOrDefault();
+        return best;
     }
-}
 
-long GetReleasedPressure(int timeToGo, (string n, int r)[] usefull, string curV, Dictionary<string, Valve> valves)
-{
-    long best = 0;
-    var cur = valves[curV];
-    foreach (var t in usefull) {
-        int newTimeToGo = timeToGo - cur.shortestpath[t.n] - 1;
-        if (newTimeToGo > 0) {
-            long gain = newTimeToGo * t.r + GetReleasedPressure(newTimeToGo, usefull.Where(c => c.n != t.n).ToArray(), t.n, valves);
-            if (best < gain)
-                best = gain;
-        }
-    }
-    return best;
-}
-
-long GetReleasedPressureTogether(int[] timeToGo, (string n, int r)[] usefull, string[] curV, Dictionary<string, Valve> valves)
-{
-    long best = 0;
-    int actor = timeToGo[0] > timeToGo[1] ? 0 : 1;
-
-    var cur = valves[curV[actor]];
-    foreach (var t in usefull) {
-        int newTimeToGo = timeToGo[actor] - cur.shortestpath[t.n] - 1;
-        if (newTimeToGo > 0) {
-            var newTimes = new int[] { newTimeToGo, timeToGo[1 - actor] };
-            var newLocs = new string[] { t.n, curV[1 - actor] };
-            long gain = newTimeToGo * t.r + GetReleasedPressureTogether(newTimes, usefull.Where(c => c.n != t.n).ToArray(), newLocs, valves);
-            if (best < gain)
-                best = gain;
-        }
-    }
-    return best;
-}
-
-static void w<T>(int number, T val, T supposedval, bool isTest)
-{
-    string? v = (val == null) ? "(null)" : val.ToString();
-    string? sv = (supposedval == null) ? "(null)" : supposedval.ToString();
-
-    var previouscolour = Console.ForegroundColor;
-    Console.Write("Answer Part " + number + ": ");
-    Console.ForegroundColor = (v == sv) ? ConsoleColor.Green : ConsoleColor.White;
-    Console.Write(v);
-    Console.ForegroundColor = previouscolour;
-    if (isTest) {
-        Console.Write(" ... supposed (example) answer: ");
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine(sv);
-        Console.ForegroundColor = previouscolour;
-    } else
-        Console.WriteLine();
-}
-
-class Valve
-{
-    public Valve(string n, int r, string[] t)
+    private static int CalculateCombinedBestReleasedPressure(int[] timeLeft, Valve[] currentValves, Dictionary<string, Valve> usefulValves)
     {
-        Name = n;
-        Release = r;
-        Tunnels = t;
+        var best = 0;
+        var index = timeLeft[0] > timeLeft[1] ? 0 : 1;
+        var currentValve = currentValves[index];
+        foreach (var v in usefulValves) {
+            var newTimeLeft = timeLeft[index] - currentValve.ShortestTimeTo[v.Key] - 1;
+            if (newTimeLeft > 0) {
+                var newTimes = new[] { newTimeLeft, timeLeft[1 - index] /* the other */ };
+                var newCurrentValves = new[] { v.Value, currentValves[1 - index] /* the other */ };
+                var proposed = newTimeLeft * v.Value.FlowRate + CalculateCombinedBestReleasedPressure(newTimes, newCurrentValves, usefulValves.Where(c => c.Value != v.Value).ToDictionary(c => c.Key, c => c.Value));
+                if (proposed > best)
+                    best = proposed;
+            }
+        }
+        return best;
     }
-    public string Name = "";
-    public int Release = 0;
-    public string[] Tunnels = new string[] { };
 
-    public Dictionary<string, int> shortestpath = new Dictionary<string, int>();
+    /// <summary>
+    /// Dijkstra implementation all shortest times from source to reach other valves
+    /// </summary>
+    private static Dictionary<string, int> FindShortestTimes(Valve source, Dictionary<string, Valve> valves)
+    {
+        var (distances, vertices) = (new Dictionary<string, int>(valves.Count), valves.Keys.ToList());
+        for (var i = 0; i < vertices.Count; i++)
+            distances[vertices[i]] = Int32.MaxValue;
+        distances[source.Name] = 0;
+
+        var pq = new PriorityQueue<Valve, int>();
+        pq.Enqueue(source, 0);
+        while (pq.Count > 0) {
+            var current = pq.Dequeue();
+            foreach (var tunnel in current.LeadsTo) {
+                var proposal = distances[current.Name] + 1;
+                if (proposal < distances[tunnel]) {
+                    distances[tunnel] = proposal;
+                    pq.Enqueue(valves[tunnel], distances[tunnel]);
+                }
+            }
+        }
+
+        return distances;
+    }
 }
 
+internal record Valve(string Name, int FlowRate, string[] LeadsTo, Dictionary<string, int> ShortestTimeTo);

@@ -2,7 +2,7 @@
   "profiles": {
     "day17": {
       "commandName": "Project",
-      "commandLineArgs": "input.txt"
+      "commandLineArgs": "input.txt 2022"
     }
   }
 }

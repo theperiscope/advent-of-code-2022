@@ -6,12 +6,15 @@ internal class Program
 
     private static void Main(string[] args)
     {
-        if (args.Length != 1) {
-            Console.WriteLine("Usage: {0} <file>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
+        if (args.Length != 2) {
+            Console.WriteLine("Usage: {0} <file> <target>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
             return;
         }
 
         var lines = File.ReadAllLines(args[0]);
+        var target = long.Parse(args[1]);
+        if (target != 2_022L && target != 1_000_000_000_000L)
+            throw new InvalidOperationException(nameof(target));
 
         var hBar = new Shape(new Point[] { new(0, 0), new(1, 0), new(2, 0), new(3, 0) });
         var plus = new Shape(new Point[] { new(1, 0), new(0, 1), new(1, 1), new(2, 1), new(1, 2) });
@@ -28,14 +31,11 @@ internal class Program
 
         var heightChange = new List<int>();
         var patternScanDone = false;
-        var NN = 5_000L;
+        var NN = target == 2022 ? 500L : 5_000L;
         var pattern = "";
         var patternStart = 0L;
         var nextPatternStart = 0L;
         var canSkip = 0L;
-
-        var target = 1_000_000_000_000L;
-        //var target = 2022L;
 
         while (true) {
 
@@ -54,7 +54,6 @@ internal class Program
             board = board.Where(x => new string(x) != ".......").ToList();
             var newH = board.Count - 1;
             heightChange.Add(newH - h);
-            //printBoard(board);
 
             if (heightChange.Count > NN && !patternScanDone) {
                 patternScanDone = true;
@@ -62,9 +61,12 @@ internal class Program
                 var x = FindPattern(s, 0);
                 pattern = x.repeatText;
                 patternStart = x.patternStart;
-                nextPatternStart = ((i + patternStart - 1) / pattern.Length) * pattern.Length;
-                canSkip = (target - nextPatternStart) / pattern.Length;
-                Console.WriteLine($"{x.repeatText} {x.patternStart}");
+                if (pattern.Length > 1) { // there is no pattern
+                    nextPatternStart = ((i + patternStart - 1) / pattern.Length) * pattern.Length;
+                    canSkip = (target - nextPatternStart) / pattern.Length;
+                } else {
+                    Console.WriteLine("No pattern found.");
+                }
             }
 
             if (patternScanDone && i == nextPatternStart && patternScanDone) {
@@ -73,16 +75,15 @@ internal class Program
                 i++;
             }
 
-            if (i == target)
+            if (i >= target)
                 break;
         }
 
-        var patternSum = pattern.Select(c => c - '0').Sum();
+        var patternSum = pattern.Length > 1 ? pattern.Select(c => c - '0').Sum() : 0;
         var n = (target - nextPatternStart) / pattern.Length;
         var sum = n * patternSum + heightChange.Sum();
 
-        Console.WriteLine($"Part 1: {board.Count - 1}");
-        Console.WriteLine($"Part 1: {sum}");
+        Console.WriteLine($"Part {(target == 2022 ? "1" : "2")}: {sum}");
     }
 
     private static (string repeatText, int patternStart) FindPattern(string s, int start)
@@ -109,26 +110,6 @@ internal class Program
         return (bestPattern, s.IndexOf(bestPattern));
     }
 
-    private static void printBoard(List<char[]> board, Shape? s = null, Point? p = null)
-    {
-        var b = new List<char[]>();
-        foreach (var line in board) {
-            var newLine = (char[])line.Clone();
-            b.Add(newLine);
-        }
-        if (s != null && p != null) {
-            foreach (var pp in s.Points) {
-                b[pp.Y + p.Y][pp.X + p.X] = '@';
-            }
-        }
-
-        for (var i = 0; i < b.Count; i++) {
-            var line = b[i];
-            Console.WriteLine($"{i,2}: {new string(line)}");
-        }
-        Console.WriteLine();
-    }
-
     private static List<char[]> newBoard(List<char[]> board, Shape s)
     {
         var newBoard = new List<char[]>();
@@ -136,17 +117,6 @@ internal class Program
             newBoard.Add(new string('.', maxWidth).ToArray());
         }
         newBoard.AddRange(board);
-        /*
-        for (var y = 0; y < s.Height; y++) {
-            for (var x = 0; x < s.Width; x++) {
-                var p = s.Points.FirstOrDefault(p => p.X == x && p.Y == y);
-                if (p != null) {
-                    newBoard[p.Y][p.X + 2] = '@';
-                }
-            }
-        }
-        */
-
         return newBoard;
     }
 

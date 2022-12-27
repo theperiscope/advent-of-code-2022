@@ -24,19 +24,15 @@ internal class Program
             }
         }
 
-        var start = 0;
-        var moves = 0;
+        var (start, moves) = (0, 0);
         var answer2 = 0;
 
         while (true) {
 
             if (moves == 10) {
-                var minX = elves.Select(a => a.X).Min();
-                var maxX = elves.Select(a => a.X).Max();
-                var minY = elves.Select(a => a.Y).Min();
-                var maxY = elves.Select(a => a.Y).Max();
-
-                var answer1 = (maxX - minX + 1) * (maxY - minY + 1) - elves.Count();
+                var (minX, maxX) = (elves.Select(a => a.X).Min(), elves.Select(a => a.X).Max());
+                var (minY, maxY) = (elves.Select(a => a.Y).Min(), elves.Select(a => a.Y).Max());
+                var answer1 = (maxX - minX + 1) * (maxY - minY + 1) - elves.Count(); // area = a*b, minus the elves
                 Console.WriteLine(answer1);
             }
 
@@ -52,60 +48,37 @@ internal class Program
                 // shuffling of order of 4 conditions using a mod counter
                 for (var p = start; p < start + 4; p++) {
 
-                    if (!done && p % 4 == 0) {
+                    Point? target = null;
+                    if (!done && p % 4 == 0 && target == null) {
                         var n = NorthCandidates.Select(x => x + elf).Count(x => elves.Contains(x));
-                        if (n == 0) {
-                            var target = new Point(elf.X, elf.Y - 1);
-                            if (!proposals.ContainsKey(target))
-                                proposals.Add(target, new List<Point>());
-                            proposals[target].Add(elf);
-                            done = true;
-                            continue;
-                        }
+                        if (n == 0) target = new Point(elf.X, elf.Y - 1);
                     }
 
-                    if (!done && p % 4 == 1) {
-                        var s = SouthCandidates.Select(x => x + elf).Count(x => elves.Contains(x));
-                        if (s == 0) {
-                            var target = new Point(elf.X, elf.Y + 1);
-                            if (!proposals.ContainsKey(target))
-                                proposals.Add(target, new List<Point>());
-                            proposals[target].Add(elf);
-                            done = true;
-                            continue;
-                        }
+                    if (!done && p % 4 == 1 && target == null) {
+                        var n = SouthCandidates.Select(x => x + elf).Count(x => elves.Contains(x));
+                        if (n == 0) target = new Point(elf.X, elf.Y + 1);
                     }
 
-                    if (!done && p % 4 == 2) {
-                        var w = WestCandidates.Select(x => x + elf).Count(x => elves.Contains(x));
-                        if (w == 0) {
-                            var target = new Point(elf.X - 1, elf.Y);
-                            if (!proposals.ContainsKey(target))
-                                proposals.Add(target, new List<Point>());
-                            proposals[target].Add(elf);
-                            done = true;
-                            continue;
-                        }
+                    if (!done && p % 4 == 2 && target == null) {
+                        var n = WestCandidates.Select(x => x + elf).Count(x => elves.Contains(x));
+                        if (n == 0) target = new Point(elf.X - 1, elf.Y);
                     }
 
-                    if (!done && p % 4 == 3) {
-                        var e = EastCandidates.Select(x => x + elf).Count(x => elves.Contains(x));
-                        if (e == 0) {
-                            var target = new Point(elf.X + 1, elf.Y);
-                            if (!proposals.ContainsKey(target))
-                                proposals.Add(target, new List<Point>());
-                            proposals[target].Add(elf);
-                            done = true;
-                            continue;
-                        }
+                    if (!done && p % 4 == 3 && target == null) {
+                        var n = EastCandidates.Select(x => x + elf).Count(x => elves.Contains(x));
+                        if (n == 0) target = new Point(elf.X + 1, elf.Y);
+                    }
+
+                    if (target != null) { // to reduce repeating code in conditions above
+                        if (!proposals.ContainsKey(target)) proposals.Add(target, new List<Point>());
+                        proposals[target].Add(elf);
+                        done = true;
+                        continue;
                     }
                 }
-
             }
 
-            if (proposals.Count == 0) {
-                break;
-            }
+            if (proposals.Count == 0) break;
 
             // second half of round: evaluate proposals and move elf to new location (the key)
             var validProposals = proposals.Where(x => x.Value.Count == 1);

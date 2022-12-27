@@ -15,7 +15,7 @@ internal class Program
         }
 
         var map = File.ReadLines(args[0]).ToList();
-        var instructions = map[map.Count - 1];
+        var instructions = map[^1];
         map.RemoveAt(map.Count - 1); // remove instructions
         map.RemoveAt(map.Count - 1); // and blank line, leaving only map
 
@@ -28,10 +28,10 @@ internal class Program
         }
     }
 
-    private static void Solve(List<string> map, Dictionary<string, Block> blockMap, int blockSize, string instructions, Dictionary<string, NeighborMap> topology)
+    private static void Solve(List<string> map, Dictionary<string, Block> blockMap, int blockSize, string instructions, Dictionary<string, NeighborMap> structureMap)
     {
         var state = new State("A", (0, 0), Dir.R);
-        var ip = 0;
+        var ip = 0; // instruction pointer
         while (true) {
             var sb = new StringBuilder();
             while (ip <= instructions.Length - 1 && instructions[ip] >= '0' && instructions[ip] <= '9') {
@@ -41,25 +41,20 @@ internal class Program
             var n = int.Parse(sb.ToString());
 
             for (var i = 0; i < n; i++) {
-                var stateNext = Move(topology, state, blockSize);
-                var global = ToInputCoordinates(blockMap, stateNext);
-                if (map[global.y][global.x] == '.') {
+                var stateNext = Move(structureMap, state, blockSize);
+                var (x, y) = ToMapCoordinates(blockMap, stateNext);
+                if (map[y][x] == '.') {
                     state = stateNext;
                 }
             }
 
-            if (ip >= instructions.Length - 1)
-                break;
+            if (ip >= instructions.Length - 1) break;
 
-            var instructionDirection = instructions[ip];
-            ip++;
-
+            var instructionDirection = instructions[ip++];
             switch (instructionDirection) {
                 case 'L':
-                    state = state with
-                    {
-                        dir = state.dir switch
-                        {
+                    state = state with {
+                        dir = state.dir switch {
                             Dir.R => Dir.U,
                             Dir.D => Dir.R,
                             Dir.L => Dir.D,
@@ -69,10 +64,8 @@ internal class Program
                     };
                     break;
                 case 'R':
-                    state = state with
-                    {
-                        dir = state.dir switch
-                        {
+                    state = state with {
+                        dir = state.dir switch {
                             Dir.R => Dir.D,
                             Dir.D => Dir.L,
                             Dir.L => Dir.U,
@@ -84,7 +77,7 @@ internal class Program
             }
         }
 
-        Console.WriteLine(1000 * (ToInputCoordinates(blockMap, state).y + 1) + 4 * (ToInputCoordinates(blockMap, state).x + 1) + state.dir);
+        Console.WriteLine(1000 * (ToMapCoordinates(blockMap, state).y + 1) + 4 * (ToMapCoordinates(blockMap, state).x + 1) + state.dir);
     }
 
     private static State Move(Dictionary<string, NeighborMap> structureMap, State state, int blockSize)
@@ -92,8 +85,7 @@ internal class Program
         bool isOutsideCurrentBlock((int x, int y) p) => p.x < 0 || p.x >= blockSize || p.y < 0 || p.y >= blockSize;
         var (startBlock, p, dir) = state;
         var endBlock = startBlock;
-        p = dir switch
-        {
+        p = dir switch {
             Dir.R => p with { x = p.x + 1 },
             Dir.D => p with { y = p.y + 1 },
             Dir.L => p with { x = p.x - 1 },
@@ -103,8 +95,7 @@ internal class Program
 
         if (isOutsideCurrentBlock(p)) {
             var mapping = structureMap[startBlock];
-            var directionalNeighbor = dir switch
-            {
+            var directionalNeighbor = dir switch {
                 Dir.R => mapping.right,
                 Dir.D => mapping.down,
                 Dir.L => mapping.left,
@@ -113,15 +104,12 @@ internal class Program
             };
 
             endBlock = directionalNeighbor.name;
-
-            var rotate = directionalNeighbor.wrapRightRotations;
-
-            p = ((p.x + blockSize) % blockSize, (p.y + blockSize) % blockSize);
-
-            for (var i = 0; i < rotate; i++) {
+            p = ((p.x + blockSize) % blockSize, (p.y + blockSize) % blockSize); // normalize as the +1 can exceed % blockSize
+            
+            var turnRightTimes = directionalNeighbor.turnRightTimes;
+            for (var i = 0; i < turnRightTimes; i++) {
                 p = p with { y = p.x, x = blockSize - p.y - 1 };
-                dir = dir switch
-                {
+                dir = dir switch {
                     Dir.R => Dir.D,
                     Dir.D => Dir.L,
                     Dir.L => Dir.U,
@@ -154,7 +142,7 @@ internal class Program
     public static Block FF = new("F", (0, NN * 3));
     public static Dictionary<string, Block> BigBlocks = new() { { "A", AA }, { "B", BB }, { "C", CC }, { "D", DD }, { "E", EE }, { "F", FF } };
 
-    private static (int x, int y) ToInputCoordinates(Dictionary<string, Block> blocks, State state) => (blocks[state.block].from.x + state.cursor.x, blocks[state.block].from.y + state.cursor.y);
+    private static (int x, int y) ToMapCoordinates(Dictionary<string, Block> blocks, State state) => (blocks[state.block].from.x + state.cursor.x, blocks[state.block].from.y + state.cursor.y);
 
     private static Dictionary<string, NeighborMap> structureMapPart1Short = new()
     {
@@ -202,4 +190,4 @@ internal record Block(string name, (int x, int y) from);
 internal record State(string block, (int x, int y) cursor, Dir dir);
 
 internal record NeighborMap(Neighbor right, Neighbor down, Neighbor left, Neighbor up);
-internal record Neighbor(string name, int wrapRightRotations);
+internal record Neighbor(string name, int turnRightTimes);

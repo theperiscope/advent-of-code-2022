@@ -14,47 +14,31 @@ namespace day04
                 return;
             }
 
-            var part1Count = Utils.ReadAllLinesFrom(args[0])
-                .Select(x => ParseInputLine(x))
-                .Where(x => IsFullyContained(x.interval1, x.interval2))
+            var input = File.ReadAllLines(args[0]);
+            var part1Count = input
+                .Select(line => Parse(line))
+                .Where(x => x.interval1.IsFullyContained(x.interval2) || x.interval2.IsFullyContained(x.interval1))
                 .Count();
 
-            var part2Count = Utils.ReadAllLinesFrom(args[0])
-                .Select(x => ParseInputLine(x))
-                .Where(x => IsOverlap(x.interval1, x.interval2) != null)
-                .Count();
+            var part2Count = input
+                .Select(x => Parse(x))
+                .Count(x => x.interval1.IsOverlap(x.interval2) || x.interval2.IsOverlap(x.interval1));
 
             Console.WriteLine(part1Count);
             Console.WriteLine(part2Count);
         }
 
-        private static ((int start, int end) interval1, (int start, int end) interval2) ParseInputLine(string s)
+        private static (Interval interval1, Interval interval2) Parse(string s)
         {
-            // TODO: add validity checks and asserts, currently assumes valid input/formats
             var afterComma = s.IndexOf(',') + 1;
-            var (e1, e2) = (s.Substring(0, afterComma - 1), s.Substring(afterComma));
+            var (i1s, i2s) = (s.Substring(0, afterComma - 1), s.Substring(afterComma));
 
-            var afterDash1 = e1.IndexOf('-') + 1;
-            var afterDash2 = e2.IndexOf('-') + 1;
+            var afterDash1 = i1s.IndexOf('-') + 1;
+            var afterDash2 = i2s.IndexOf('-') + 1;
 
-            var (e1Start, e1End) = (int.Parse(e1.Substring(0, afterDash1 - 1)), int.Parse(e1.Substring(afterDash1)));
-            var (e2Start, e2End) = (int.Parse(e2.Substring(0, afterDash2 - 1)), int.Parse(e2.Substring(afterDash2)));
-
-            return ((e1Start, e1End), (e2Start, e2End));
-        }
-
-        private static bool IsFullyContained((int start, int end) interval1, (int start, int end) interval2)
-        {
-            return
-                (interval1.start >= interval2.start && interval1.end <= interval2.end) ||
-                (interval2.start >= interval1.start && interval2.end <= interval1.end);
-        }
-
-        private static (int overlapStart, int overlapEnd)? IsOverlap((int start, int end) interval1, (int start, int end) interval2)
-        {
-            return interval2.start > interval1.end || interval1.start > interval2.end
-                ? null
-                : (Math.Max(interval1.start, interval2.start), Math.Min(interval1.end, interval2.end));
+            var i1 = new Interval(int.Parse(i1s[..(afterDash1 - 1)]), int.Parse(i1s[afterDash1..]));
+            var i2 = new Interval(int.Parse(i2s[..(afterDash2 - 1)]), int.Parse(i2s[afterDash2..]));
+            return (i1, i2);
         }
     }
 }

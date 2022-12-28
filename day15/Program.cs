@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using shared;
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 namespace day15;
@@ -11,6 +12,8 @@ internal class Program
     public static void Main(string[] args)
     {
         if (args.Length != 3) {
+            // day15 input-short.txt 10 20
+            // day15 input-short.txt 2000000 4000000
             Console.WriteLine("Usage: {0} <file> <rowNumber> <mapSize>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
             return;
         }
@@ -80,48 +83,6 @@ internal class Program
         var interval = new Interval(startX, startX + coverageAtRow - 1);
 
         return interval;
-    }
-}
-
-public record Interval : IComparable<Interval>
-{
-    public Interval(int start, int end)
-    {
-        Start = start;
-        End = end;
-    }
-    public int Start { get; set; }
-    public int End { get; set; }
-
-    public int CompareTo(Interval? other)
-    {
-        if (other is null)
-            throw new ArgumentNullException(nameof(other));
-        return Start < other.Start ? -1 : Start > other.Start ? 1 : 0;
-    }
-
-    public static List<Interval> Merge(List<Interval> intervals)
-    {
-        if (intervals is null)
-            throw new ArgumentNullException(nameof(intervals));
-        if (intervals.Count == 0)
-            return new List<Interval>();
-
-        var s = new Stack<Interval>();
-        intervals.Sort();
-        s.Push(intervals[0]);
-        for (var i = 1; i < intervals.Count; i++) {
-            var top = s.Peek();
-            if (top.End < intervals[i].Start) {
-                s.Push(intervals[i]);
-            } else if (top.End < intervals[i].End) {
-                top.End = intervals[i].End;
-                s.Pop();
-                s.Push(top);
-            }
-        }
-
-        return s.ToList();
     }
 }
 

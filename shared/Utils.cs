@@ -27,5 +27,7 @@
             }
             return freq;
         }
+
+        public static string TrimTrailingEndOfLine(this string input) => input.TrimEnd(Environment.NewLine.ToCharArray());
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using shared;
+using System.Text;
 
 namespace day07;
 
@@ -17,11 +18,14 @@ internal class Program
             return;
         }
 
-        var data = System.IO.File.ReadAllLines(args[0]);
+        var data = System.IO.File.ReadAllLines(args[0]).TrimTrailingEndOfLine();
         Directory root = BuildFileSystem(data);
 
-        Part1(root);
-        Part2(root);
+        var (results, timings) = Perf.BenchmarkTime(() => Part1(root));
+        Console.WriteLine($"Part 1: {results[0]} in {timings[0]}ms");
+
+        (results, timings) = Perf.BenchmarkTime(() => Part2(root));
+        Console.WriteLine($"Part 2: {results[0]} in {timings[0]}ms");
     }
 
     private static Directory BuildFileSystem(string[] data)
@@ -50,17 +54,17 @@ internal class Program
         return root;
     }
 
-    private static void Part1(Directory root)
+    private static long Part1(Directory root)
     {
-        Console.WriteLine(FindFolders(root, 0).Where(x => x.Value <= 100_000).Sum(x => x.Value));
+        return FindFolders(root, 0).Where(x => x.Value <= 100_000).Sum(x => x.Value);
     }
 
-    private static void Part2(Directory root)
+    private static long Part2(Directory root)
     {
         var allFilesSize = FindAllFiles(root).Select(x => x.Size).Sum();
         var availableSpace = DISKSIZE - allFilesSize;
         var needToFree = TARGETFREESPACE - availableSpace;
-        Console.WriteLine(FindFolders(root, needToFree).Min(x => x.Value));
+        return FindFolders(root, needToFree).Min(x => x.Value);
     }
 
     private static List<File> FindAllFiles(Directory root)

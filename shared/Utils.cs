@@ -28,6 +28,15 @@
             return freq;
         }
 
+        public static string[] TrimTrailingEndOfLine(this string[] input)
+        {
+            if (!string.IsNullOrEmpty(input[input.Length - 1]))
+                return input;
+
+            Array.Resize(ref input, input.Length - 1);
+            return input;
+        }
+
         public static string TrimTrailingEndOfLine(this string input) => input.TrimEnd(Environment.NewLine.ToCharArray());
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace day08;
+﻿using shared;
+
+namespace day08;
 
 /// <summary>
 /// Treetop Tree House
@@ -12,18 +14,29 @@ internal class Program
             return;
         }
 
-        var data = File.ReadAllLines(args[0]);
+        var (parseResults, parseTimings) = Perf.BenchmarkTime(() => Parse(args[0]));
+        Console.WriteLine($"Parsing: {parseResults[0].Count}x{parseResults[0][0].Count} in {parseTimings[0]}ms");
 
-        var arr = new List<List<char>>();
-        for (var i = 0; i < data.Length; i++) {
-            var row = data[i];
-            arr.Add(new List<char>(row.AsEnumerable()));
-        }
+        var (results, timings) = Perf.BenchmarkTime(() => Solve(parseResults[0]));
+
+        // (parseResults[0].Count * 2 + ((parseResults[0][0].Count - 2)) * 2) is the exact number of visible trees by definition along the border
+        // Solve loop skips those
+        Console.WriteLine($"Part 1 : {results[0].n + (parseResults[0].Count * 2 + ((parseResults[0][0].Count - 2)) * 2)} in {timings[0]}ms");
+        Console.WriteLine($"Part 2 : {results[0].maxScore}  using same timing");
+    }
+
+    private static List<List<char>> Parse(string fileName)
+    {
+        return File.ReadAllLines(fileName).TrimTrailingEndOfLine().Select(line => line.AsEnumerable().ToList()).ToList();
+    }
+
+    private static (int n, int maxScore) Solve(List<List<char>> arr)
+    {
 
         var n = 0;
         var maxScore = 0;
-        for (var row = 0; row < arr.Count; row++) {
-            for (var col = 0; col < arr[row].Count; col++) {
+        for (var row = 1; row < arr.Count - 1; row++) {
+            for (var col = 1; col < arr[row].Count - 1; col++) {
                 var x = arr[row][col];
 
                 var isVisibleTop = true;
@@ -90,7 +103,6 @@ internal class Program
             }
         }
 
-        Console.WriteLine($"Part 1: {n}");
-        Console.WriteLine($"Part 2: {maxScore}");
+        return (n, maxScore);
     }
 }

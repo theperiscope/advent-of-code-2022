@@ -18,14 +18,20 @@ internal class Program
             return;
         }
 
-        var data = System.IO.File.ReadAllLines(args[0]).TrimTrailingEndOfLine();
-        Directory root = BuildFileSystem(data);
+        var (input, timings) = Perf.BenchmarkTime(() => {
+            var data = System.IO.File.ReadAllLines(args[0]).TrimTrailingEndOfLine();
+            Directory root = BuildFileSystem(data);
+            return root;
+        });
 
-        var (results, timings) = Perf.BenchmarkTime(() => Part1(root));
-        Console.WriteLine($"Part 1: {results[0]} in {timings[0]}ms");
+        Directory root = input[0];
+        Console.WriteLine($"Parsing: {root.Size} root folder size in {timings[0]}ms");
 
-        (results, timings) = Perf.BenchmarkTime(() => Part2(root));
-        Console.WriteLine($"Part 2: {results[0]} in {timings[0]}ms");
+        var (results, timings1) = Perf.BenchmarkTime(() => Part1(root));
+        Console.WriteLine($"Part 1 : {results[0]} in {timings1[0]}ms");
+
+        (results, timings1) = Perf.BenchmarkTime(() => Part2(root));
+        Console.WriteLine($"Part 2 : {results[0]} in {timings1[0]}ms");
     }
 
     private static Directory BuildFileSystem(string[] data)
@@ -40,50 +46,37 @@ internal class Program
             } else if (row == "$ cd ..") {
                 var dir = row[5..];
                 currentDir = currentDir.Parent!;
-            } else if (row.StartsWith("$ cd") && row.IndexOf('/') == -1) { // not-root cd
+            } else if (row.StartsWith("$ cd")) { // not cd / or cd ..
                 var dir = row[5..];
-                currentDir = currentDir.Directories.First(d => d.Name == dir);
+                currentDir = currentDir.Children.First(d => d.Name == dir);
             } else if (row.StartsWith("dir")) {
                 var dir = row[4..];
-                currentDir.Directories.Add(new Directory(dir) { Parent = currentDir });
+                currentDir.Children.Add(new Directory(dir) { Parent = currentDir });
             } else if (row[0] is >= '0' and <= '9') {
                 var space = row.IndexOf(' ');
-                currentDir.Files.Add(new File(currentDir, row[(space + 1)..], long.Parse(row[..space])));
+                // having a file increases current folder size and also all its parents
+                var p = currentDir;
+                while (p != null) {
+                    p.Size += long.Parse(row[..space]);
+                    p = p.Parent;
+                }
             }
         }
         return root;
     }
 
-    private static long Part1(Directory root)
-    {
-        return FindFolders(root, 0).Where(x => x.Value <= 100_000).Sum(x => x.Value);
-    }
+    private static long Part1(Directory root) => FindFolders(root, 0).Where(x => x.Size <= 100_000).Sum(x => x.Size);
+    private static long Part2(Directory root) => FindFolders(root, TARGETFREESPACE - (DISKSIZE - root.Size)).Min(x => x.Size);
 
-    private static long Part2(Directory root)
+    private static List<Directory> FindFolders(Directory root, long minimumSize)
     {
-        var allFilesSize = FindAllFiles(root).Select(x => x.Size).Sum();
-        var availableSpace = DISKSIZE - allFilesSize;
-        var needToFree = TARGETFREESPACE - availableSpace;
-        return FindFolders(root, needToFree).Min(x => x.Value);
-    }
-
-    private static List<File> FindAllFiles(Directory root)
-    {
-        var list = new List<File>(root.Files);
-        foreach (var dir in root.Directories)
-            list.AddRange(FindAllFiles(dir));
-        return list;
-    }
-
-    private static Dictionary<Directory, long> FindFolders(Directory root, long minimumSize)
-    {
-        var candidates = new Dictionary<Directory, long>();
-        var totalFileSize = FindAllFiles(root).Select(x => x.Size).Sum();
+        var candidates = new List<Directory>();
+        var totalFileSize = root.Size;
         if (totalFileSize >= minimumSize)
-            candidates.Add(root, totalFileSize);
-        foreach (var dir in root.Directories) {
+            candidates.Add(root);
+        foreach (var dir in root.Children) {
             foreach (var result in FindFolders(dir, minimumSize))
-                candidates.Add(result.Key, result.Value);
+                candidates.Add(result);
         }
         return candidates;
     }
@@ -93,14 +86,14 @@ internal class Program
         public Directory(string name)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
-            Directories = new List<Directory>();
-            Files = new List<File>();
+            Children = new List<Directory>();
+            Size = 0L;
         }
 
         public Directory? Parent { get; set; }
         public string Name { get; }
-        public List<Directory> Directories { get; }
-        public List<File> Files { get; }
+        public List<Directory> Children { get; }
+        public long Size { get; set; }
 
         public override string ToString()
         {
@@ -112,25 +105,6 @@ internal class Program
                 sb.Insert(0, $"{n.Name}/");
             }
             return sb.ToString();
-        }
-    }
-
-    private class File
-    {
-        public File(Directory dir, string name, long size)
-        {
-            Dir = dir ?? throw new ArgumentNullException(nameof(dir));
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            Size = size;
-        }
-
-        public Directory Dir { get; }
-        public string Name { get; }
-        public long Size { get; }
-
-        public override string ToString()
-        {
-            return $"{Dir}{Name}: {Size}";
         }
     }
 }

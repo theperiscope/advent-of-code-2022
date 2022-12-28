@@ -34,9 +34,23 @@ internal class Program
     /// </summary>
     private static int GetMarkerPosition(string s, int n)
     {
-        return s
-            .Select((ch, i) => new { i, n = s.Substring(i, n).Distinct().Count() })
-            .Where(el => el.n == n)
-            .Select(el => el.i + n).First();
+        for (var i = 0; i < s.Length - n; i++) {
+            var ss = s.Substring(i, n);
+            if (IsAllUniqueLowercaseCharacters(ss))
+                return i + n;
+        }
+        return -1;
+    }
+
+    private static bool IsAllUniqueLowercaseCharacters(string s)
+    {
+        var isRepeat = 0; // 32 bits is enough for the 26 letters we have
+        for (var i = 0; i < s.Length; i++) {
+            var idx = s[i] - 'a';
+            if ((isRepeat & (1 << idx)) > 0)
+                return false;
+            isRepeat |= (1 << idx); // flip bit "idx" to 1
+        }
+        return true;
     }
 }

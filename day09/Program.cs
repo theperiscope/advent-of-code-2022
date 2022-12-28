@@ -1,4 +1,6 @@
-﻿namespace day09;
+﻿using shared;
+
+namespace day09;
 
 /// <summary>
 /// Rope Bridge
@@ -12,23 +14,32 @@ internal class Program
             return;
         }
 
-        var data = File.ReadAllLines(args[0]);
+        var (parseResults, parseTimings) = Perf.BenchmarkTime(() => File.ReadAllLines(args[0]).TrimTrailingEndOfLine());
+        var data = parseResults[0];
+        Console.WriteLine($"Parsing: {data.Length} rows in {parseTimings[0]}ms");
 
-        var s = new Snake(2);
-        var v = new HashSet<(int X, int Y)> { (0, 0) };
-        foreach (var cmdInput in data) {
-            v = v.Union(s.Move(cmdInput[0], int.Parse(cmdInput[2..]))).ToHashSet();
-        }
+        var (part1Results, part1Timings) = Perf.BenchmarkTime(() => {
+            var s = new Snake(2);
+            var v = new HashSet<(int X, int Y)> { (0, 0) };
+            foreach (var cmdInput in data) {
+                v.UnionWith(s.Move(cmdInput[0], int.Parse(cmdInput[2..])));
+            }
+            return v.Count;
+        });
 
-        Console.WriteLine(v.Count);
+        Console.WriteLine($"Part 1 : {part1Results[0]} in {part1Timings[0]}ms");
 
-        var s10 = new Snake(10);
-        var v10 = new HashSet<(int X, int Y)> { (0, 0) };
-        foreach (var cmdInput in data) {
-            v10 = v10.Union(s10.Move(cmdInput[0], int.Parse(cmdInput[2..]))).ToHashSet();
-        }
+        var (part2Results, part2Timings) = Perf.BenchmarkTime(() => {
+            var s = new Snake(10);
+            var v = new HashSet<(int X, int Y)> { (0, 0) };
+            foreach (var cmdInput in data) {
+                v.UnionWith(s.Move(cmdInput[0], int.Parse(cmdInput[2..])));
+            }
+            return v.Count;
+        });
 
-        Console.WriteLine(v10.Count);
+        Console.WriteLine($"Part 2 : {part2Results[0]} in {part2Timings[0]}ms");
+        Console.WriteLine($"Total  : {parseTimings[0] + part1Timings[0] + part2Timings[0]}ms");
 
         //Visualize(v);
     }
@@ -53,7 +64,8 @@ internal class Snake
 {
     public Snake(int n)
     {
-        var tmp = new Part() { // start with tail
+        var tmp = new Part()
+        { // start with tail
             Name = (n - 1).ToString(),
             X = 0,
             Y = 0,
@@ -62,7 +74,8 @@ internal class Snake
         var tail = tmp;
 
         for (var i = n - 2; i >= 0; i--) {
-            var x = new Part() {
+            var x = new Part()
+            {
                 Name = i == 0 ? "H" : i.ToString(),
                 X = 0,
                 Y = 0,
@@ -101,14 +114,9 @@ internal class Snake
                     throw new InvalidOperationException();
             }
             while (p.Previous != null) {
-                if (Math.Abs(p.X - p.Previous.X) >= 2 ||
-                    Math.Abs(p.Y - p.Previous.Y) >= 2) {
-                    p.Previous.X +=
-                        ((p.X != p.Previous.X) ? 1 : 0)
-                        * Math.Sign(p.X - p.Previous.X);
-                    p.Previous.Y +=
-                        ((p.Y != p.Previous.Y) ? 1 : 0)
-                        * Math.Sign(p.Y - p.Previous.Y);
+                if (Math.Abs(p.X - p.Previous.X) >= 2 || Math.Abs(p.Y - p.Previous.Y) >= 2) {
+                    p.Previous.X += ((p.X != p.Previous.X) ? 1 : 0) * Math.Sign(p.X - p.Previous.X);
+                    p.Previous.Y += ((p.Y != p.Previous.Y) ? 1 : 0) * Math.Sign(p.Y - p.Previous.Y);
                 }
                 p = p.Previous;
             }

@@ -37,6 +37,10 @@
             return input;
         }
 
+        public static IList<T> Clone<T>(this IList<T> list) where T : ICloneable {
+            return list.Select(item => (T)item.Clone()).ToList();
+        }
+
         public static string TrimTrailingEndOfLine(this string input) => input.TrimEnd(Environment.NewLine.ToCharArray());
     }
 }

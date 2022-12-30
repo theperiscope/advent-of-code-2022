@@ -85,17 +85,3 @@ internal class Program
         return interval;
     }
 }
-
-public record Point
-{
-    public Point(int x, int y)
-    {
-        X = x;
-        Y = y;
-    }
-
-    public int X;
-    public int Y;
-
-    public int ManhattanDistanceTo(Point p) => Math.Abs(p.X - X) + Math.Abs(p.Y - Y);
-}

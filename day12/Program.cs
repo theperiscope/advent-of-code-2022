@@ -38,16 +38,16 @@ internal class Program
         Point start = new(0, 0), end = new(0, 0);
         var allAs = new List<Point>(); // needed for part 2
         var grid = new int[data.Length + 2, data[0].Length + 2]; // borders (0s) to make getting neighbors more readable
-        for (var i = 0; i < data.Length; i++) {
-            for (var j = 0; j < data[0].Length; j++) {
-                if (data[i][j] == 'S')
-                    start = new Point(i, j);
-                if (data[i][j] == 'E')
-                    end = new Point(i, j);
-                if (data[i][j] == 'a')
-                    allAs.Add(new Point(i, j));
+        for (var y = 0; y < data.Length; y++) {
+            for (var x = 0; x < data[0].Length; x++) {
+                if (data[y][x] == 'S')
+                    start = new Point(x, y);
+                if (data[y][x] == 'E')
+                    end = new Point(x, y);
+                if (data[y][x] == 'a')
+                    allAs.Add(new Point(x, y));
 
-                grid[i + 1, j + 1] = data[i][j] switch { 'S' => '`', 'E' => '{', _ => data[i][j] }; // re-map start and end to character before/after in ASCII order
+                grid[y + 1, x + 1] = data[y][x] switch { 'S' => '`', 'E' => '{', _ => data[y][x] }; // re-map start and end to character before/after in ASCII order
             }
         }
         return (grid, start, end, allAs);
@@ -64,11 +64,11 @@ internal class Program
         while (queue.Count > 0) {
             var point = queue.Dequeue();
             var adjustedPoint = point + offset;
-            var neighbors = neighborCandidates.Select(x => x + adjustedPoint).Where(x => grid[x.Row, x.Col] != 0).ToList();
+            var neighbors = neighborCandidates.Select(x => x + adjustedPoint).Where(x => grid[x.Y, x.X] != 0).ToList();
 
             foreach (var neighbor in neighbors) {
                 if (parents.ContainsKey(neighbor - offset) ||
-                    grid[neighbor.Row, neighbor.Col] - grid[adjustedPoint.Row, adjustedPoint.Col] > 1) // same/ascending order
+                    grid[neighbor.Y, neighbor.X] - grid[adjustedPoint.Y, adjustedPoint.X] > 1) // same/ascending order
                     continue;
 
                 parents[neighbor - offset] = point;
@@ -87,11 +87,11 @@ internal class Program
         while (queue.Count > 0) {
             var point = queue.Dequeue();
             var adjustedPoint = point + offset;
-            var neighbors = neighborCandidates.Select(x => x + adjustedPoint).Where(x => grid[x.Row, x.Col] != 0).ToList();
+            var neighbors = neighborCandidates.Select(x => x + adjustedPoint).Where(x => grid[x.Y, x.X] != 0).ToList();
 
             foreach (var neighbor in neighbors) {
                 if (parents.ContainsKey(neighbor - offset)) continue;
-                if (!(grid[neighbor.Row, neighbor.Col] - grid[adjustedPoint.Row, adjustedPoint.Col] >= -1)) // same/descending order
+                if (!(grid[neighbor.Y, neighbor.X] - grid[adjustedPoint.Y, adjustedPoint.X] >= -1)) // same/descending order
                     continue;
 
                 parents[neighbor - offset] = point;
@@ -113,18 +113,4 @@ internal class Program
         path.Reverse();
         return path;
     }
-}
-
-internal record Point
-{
-    public Point(int row, int col) {
-        Row = row;
-        Col = col;
-    }
-
-    public int Row;
-    public int Col;
-
-    public static Point operator +(Point a, Point b) => new(a.Row + b.Row, a.Col + b.Col);
-    public static Point operator -(Point a, Point b) => new(a.Row - b.Row, a.Col - b.Col);
 }

@@ -1,4 +1,6 @@
-﻿namespace day14;
+﻿using shared;
+
+namespace day14;
 
 /// <summary>
 /// Regolith Reservoir
@@ -112,16 +114,4 @@ internal class Program
             origin = !leftFilled ? diagLeft : diagRight;
         }
     }
-}
-
-public record Point
-{
-    public Point(int x, int y)
-    {
-        X = x;
-        Y = y;
-    }
-
-    public int X;
-    public int Y;
 }

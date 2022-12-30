@@ -1,4 +1,6 @@
-﻿namespace day23;
+﻿using shared;
+
+namespace day23;
 
 /// <summary>
 /// Unstable Diffusion
@@ -100,20 +102,4 @@ internal class Program
     private static readonly List<Point> WestCandidates = new() { new(-1, -1), new(-1, 0), new(-1, 1), };
     private static readonly List<Point> EastCandidates = new() { new(1, -1), new(1, 0), new(1, 1), };
     private static readonly List<Point> AllCandidates = NorthCandidates.Union(SouthCandidates).Union(WestCandidates).Union(EastCandidates).ToList();
-
-}
-
-internal record Point
-{
-    public Point(int x, int y)
-    {
-        X = x;
-        Y = y;
-    }
-
-    public int X;
-    public int Y;
-
-    public static Point operator +(Point a, Point b) => new(a.X + b.X, a.Y + b.Y);
-    public static Point operator -(Point a, Point b) => new(a.X - b.X, a.Y - b.Y);
 }

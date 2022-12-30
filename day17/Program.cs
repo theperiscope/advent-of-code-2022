@@ -1,5 +1,7 @@
 ﻿using shared;
 
+namespace day17;
+
 internal class Program
 {
     const int maxWidth = 7;
@@ -165,28 +167,16 @@ internal class Program
 
 public record Shape
 {
-    private int w, h;
-    public Shape() { Points = new List<Point>(); w = h = 0; }
+    private readonly int w, h;
+
     public Shape(IEnumerable<Point> points)
     {
         Points = new List<Point>(points);
         w = Points.Select(p => p.X).Max() - Points.Select(p => p.X).Min() + 1;
         h = Points.Select(p => p.Y).Max() - Points.Select(p => p.Y).Min() + 1;
     }
-    public IReadOnlyList<Point> Points { get; set; }
 
+    public IReadOnlyList<Point> Points { get; set; }
     public int Width => w;
     public int Height => h;
-}
-
-public record Point
-{
-    public Point(int x, int y)
-    {
-        X = x;
-        Y = y;
-    }
-
-    public int X;
-    public int Y;
 }

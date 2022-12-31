@@ -1,4 +1,5 @@
 ﻿using shared;
+using System.Diagnostics;
 
 namespace day23;
 
@@ -7,26 +8,30 @@ namespace day23;
 /// </summary>
 internal class Program
 {
+    private static readonly object dictLock = new object();
+
     static void Main(string[] args) {
         if (args.Length != 1) {
             Console.WriteLine("Usage: {0} <file>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
             return;
         }
 
+        var sw = new Stopwatch(); sw.Start();
         var input = File.ReadLines(args[0]).ToList();
         var lineLength = input[0].Length;
 
         var elves = new HashSet<Point>();
         for (var y = 0; y < input.Count; y++) {
-            var line = input[y];
             for (var x = 0; x < lineLength; x++) {
-                if (line[x] == '#')
+                if (input[y][x] == '#')
                     elves.Add(new(x, y));
             }
         }
 
         var (start, moves) = (0, 0);
         var answer2 = 0;
+
+        var proposals = new Dictionary<Point, List<Point>>();
 
         while (true) {
 
@@ -37,48 +42,47 @@ internal class Program
                 Console.WriteLine(answer1);
             }
 
-            var proposals = new Dictionary<Point, List<Point>>();
+            proposals.Clear();
 
             // first half of round: make proposals
-            foreach (var elf in elves) {
+            Parallel.ForEach(elves, (elf, state) => {
                 var elvesAround = AllCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
                 if (!elvesAround)
-                    continue;
+                    return; // continue
+                var nn = NorthCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
+                var ss = SouthCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
+                var ww = WestCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
+                var ee = EastCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
 
                 var done = false;
                 // shuffling of order of 4 conditions using a mod counter
                 for (var p = start; p < start + 4; p++) {
-
+                    if (done) break;
                     Point? target = null;
                     if (!done && p % 4 == 0 && target == null) {
-                        var n = NorthCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
-                        if (!n) target = new Point(elf.X, elf.Y - 1);
-                    }
-
-                    if (!done && p % 4 == 1 && target == null) {
-                        var n = SouthCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
-                        if (!n) target = new Point(elf.X, elf.Y + 1);
-                    }
-
-                    if (!done && p % 4 == 2 && target == null) {
-                        var n = WestCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
-                        if (!n) target = new Point(elf.X - 1, elf.Y);
-                    }
-
-                    if (!done && p % 4 == 3 && target == null) {
-                        var n = EastCandidates.Select(x => x + elf).Any(x => elves.Contains(x));
-                        if (!n) target = new Point(elf.X + 1, elf.Y);
+                        if (!nn) target = new Point(elf.X, elf.Y - 1);
+                    } else if (!done && p % 4 == 1 && target == null) {
+                        if (!ss) target = new Point(elf.X, elf.Y + 1);
+                    } else if (!done && p % 4 == 2 && target == null) {
+                        if (!ww) target = new Point(elf.X - 1, elf.Y);
+                    } else if (!done && p % 4 == 3 && target == null) {
+                        if (!ee) target = new Point(elf.X + 1, elf.Y);
                     }
 
                     if (target != null) { // to reduce repeating code in conditions above
-                        if (!proposals.ContainsKey(target)) proposals.Add(target, new List<Point>());
-                        if (proposals[target].Count <= 1) // no need to have more than 2
-                            proposals[target].Add(elf);
+                        lock (dictLock) {
+                            if (!proposals.ContainsKey(target)) {
+                                proposals.Add(target, new List<Point> { elf });
+                            } else {
+                                if (proposals[target].Count <= 1) // we don't need any extras
+                                    proposals[target].Add(elf);
+                            }
+                        }
                         done = true;
-                        continue;
+                        return; // continue
                     }
                 }
-            }
+            });
 
             if (proposals.Count == 0) break;
 
@@ -95,6 +99,7 @@ internal class Program
 
         answer2 = moves + 1;
         Console.WriteLine(answer2);
+        sw.Stop(); Console.WriteLine(sw.Elapsed.TotalMilliseconds);
     }
 
     private static readonly List<Point> NorthCandidates = new() { new(-1, -1), new(0, -1), new(1, -1), };

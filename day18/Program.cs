@@ -1,17 +1,32 @@
-﻿internal class Program
+﻿using shared;
+
+internal class Program
 {
     /// <summary>
     /// Boiling Boulders
     /// </summary>
-    private static void Main(string[] args)
-    {
+    private static void Main(string[] args) {
         if (args.Length != 1) {
             Console.WriteLine("Usage: {0} <file>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
             return;
         }
 
-        var cubes = File.ReadAllLines(args[0]).Select(l => l.Split(",").Select((s, i) => int.Parse(s) * ((int)Math.Pow(10, i * 2))).Sum()).ToHashSet();
+        var (parseResults, parseTimings) = Perf.BenchmarkTime(() => Parse(args[0]));
+        var cubes = parseResults[0];
+        Console.WriteLine($"Parsing: {cubes.Count} cubes in {parseTimings[0]:F2}ms");
 
+        var (part1Results, part1Timings) = Perf.BenchmarkTime(() => Part1(cubes));
+        var sum = part1Results[0];
+        Console.WriteLine($"Part 1 : {sum} in {part1Timings[0]:F2}ms");
+
+        var (part2Results, part2Timings) = Perf.BenchmarkTime(() => Part2(cubes));
+        var sum2 = part2Results[0];
+        Console.WriteLine($"Part 2 : {sum2} in {part2Timings[0]:F2}ms");
+
+        Console.WriteLine($"Total  : {parseTimings[0] + part1Timings[0] + part2Timings[0]:F2}ms");
+    }
+
+    private static int Part2(HashSet<int> cubes) {
         var cubePoints = cubes.Select(c => FromInt(c));
         var xmin = cubePoints.Select(p => p.x).Min();
         var xmax = cubePoints.Select(p => p.x).Max();
@@ -20,20 +35,8 @@
         var zmin = cubePoints.Select(p => p.z).Min();
         var zmax = cubePoints.Select(p => p.z).Max();
 
-        var sum = cubes.Select(c => FromInt(c)).Select(p => {
-            var sides = 6;
-            var neighbors = Neighbors(p);
-            foreach (var n in neighbors) {
-                if (cubes.Contains(n))
-                    sides--;
-            }
-            return sides;
-        }).Sum();
-
-        Console.WriteLine($"Part 1: {sum}");
-
         // expand range by 1 in all directions and if there's no cube it's a space
-        var spaces = new HashSet<int>(); 
+        var spaces = new HashSet<int>();
         for (var x = xmin - 1; x <= xmax + 1; x++)
             for (var y = ymin - 1; y <= ymax + 1; y++)
                 for (var z = zmin - 1; z <= zmax + 1; z++) {
@@ -78,12 +81,24 @@
             }
             return sides;
         }).Sum();
-
-        Console.WriteLine($"Part 2: {sum2}");
+        return sum2;
     }
 
-    private static HashSet<int> Neighbors((int x, int y, int z) p)
-    {
+    private static int Part1(HashSet<int> cubes) {
+        return cubes.Select(c => FromInt(c)).Select(p => {
+            var sides = 6;
+            var neighbors = Neighbors(p);
+            foreach (var n in neighbors) {
+                if (cubes.Contains(n))
+                    sides--;
+            }
+            return sides;
+        }).Sum();
+    }
+
+    private static HashSet<int> Parse(string fileName) => File.ReadAllLines(fileName).Select(l => l.Split(",").Select((s, i) => int.Parse(s) * ((int)Math.Pow(10, i * 2))).Sum()).ToHashSet();
+
+    private static HashSet<int> Neighbors((int x, int y, int z) p) {
         return new HashSet<int>
         {
             ToInt(new(p.x+1, p.y  ,p.z)),
@@ -95,13 +110,11 @@
         };
     }
 
-    private static int ToInt((int x, int y, int z) p)
-    {
+    private static int ToInt((int x, int y, int z) p) {
         return p.x * 10000 + p.y * 100 + p.z;
     }
 
-    private static (int x, int y, int z) FromInt(int coord)
-    {
+    private static (int x, int y, int z) FromInt(int coord) {
         return (coord / 10000, coord / 100 % 100, coord % 100);
     }
 }

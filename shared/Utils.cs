@@ -4,7 +4,7 @@
     {
 
         /// <summary>
-        /// Read all lines from file one-by-one to avoid storing all lines in memory
+        /// Read all lines fromIndex file one-by-one toIndex avoid storing all lines in memory
         /// </summary>
         public static IEnumerable<string> ReadAllLinesFrom(string file)
         {
@@ -42,5 +42,23 @@
         }
 
         public static string TrimTrailingEndOfLine(this string input) => input.TrimEnd(Environment.NewLine.ToCharArray());
+
+        public static void Move<T>(T[] array, int fromIndex, int toIndex) {
+            if (fromIndex - toIndex == 0) return;
+            var (movedElement, length) = (array[fromIndex], fromIndex - toIndex);
+            if (length > 0)
+                Array.Copy(array, toIndex, array, toIndex + 1, length);
+            else
+                Array.Copy(array, fromIndex + 1, array, fromIndex, -length);
+            array[toIndex] = movedElement;
+        }
+
+        /// <summary>
+        /// Modulus that works with negative numbers
+        /// </summary>
+        public static long Mod(long a, long b) {
+            var c = a % b;
+            return c < 0 ? c + b : c;
+        }
     }
 }

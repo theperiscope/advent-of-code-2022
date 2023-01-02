@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using shared;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace day05;
@@ -8,27 +9,36 @@ namespace day05;
 /// </summary>
 internal class Program
 {
-    private static readonly Regex instructionRegex = new Regex(@"^move (?<n>\d+) from (?<from>\d+) to (?<to>\d+)$", RegexOptions.Compiled);
+    private static readonly Regex instructionRegex = new(@"^move (?<n>\d+) from (?<from>\d+) to (?<to>\d+)$", RegexOptions.Compiled);
 
-    private static void Main(string[] args)
-    {
+    private static void Main(string[] args) {
         if (args.Length == 0) {
             Console.WriteLine("Usage: {0} <file>", Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]));
             return;
         }
 
-        var data = File.ReadAllLines(args[0]);
+        var (parseResults, parseTimings) = Perf.BenchmarkTime(() => Parse(args[0]));
+        var data = parseResults[0];
+        Console.WriteLine($"Parsing: {data.Length} stacks in {parseTimings[0]:F2}ms");
 
-        Part1(data);
-        Part2(data);
+        var (part1Results, part1Timings) = Perf.BenchmarkTime(() => Part1(data));
+        var part1 = part1Results[0];
+        Console.WriteLine($"Part 1 : {part1} in {part1Timings[0]:F2}ms");
+
+        var (part2Results, part2Timings) = Perf.BenchmarkTime(() => Part2(data));
+        var part2 = part2Results[0];
+        Console.WriteLine($"Part 2 : {part2} in {part2Timings[0]:F2}ms");
+     
+        Console.WriteLine($"Total  : {parseTimings[0] + part1Timings[0] + part2Timings[0]:F2}ms");
     }
+
+    private static string[] Parse(string fileName) => File.ReadAllLines(fileName).TrimTrailingEndOfLine();
 
     /// <summary>
     /// Processes stack information contained before the blank line in the input files
     /// </summary>
     /// <returns>List of stacks containing characters, and the file row number where processing instructions begin.</returns>
-    private static List<Stack<char>> CreateStacksFromInput(string[] data, out int initialRowWithInstructions)
-    {
+    private static List<Stack<char>> CreateStacksFromInput(string[] data, out int initialRowWithInstructions) {
         var row = 0;
         // "[A] " is 4 characters and the file is formatted with spaces on those lines.
         // The +1 is for missing final space after last stack on the line.
@@ -62,17 +72,9 @@ internal class Program
         return stacks;
     }
 
-    private static void PrintStackTops(List<Stack<char>> stacks)
-    {
-        for (var i = 0; i < stacks.Count; i++) {
-            var ch = stacks[i].Peek(); // assumes non-empty stacks
-            Console.Write(ch);
-        }
-        Console.WriteLine();
-    }
+    private static string GetStackTops(List<Stack<char>> stacks) => new string(stacks.Select(s => s.Peek()).ToArray());
 
-    private static void Part1(string[] data)
-    {
+    private static string Part1(string[] data) {
         var stacks = CreateStacksFromInput(data, out var initialRowWithInstructions);
 
         for (var i = initialRowWithInstructions; i < data.Length; i++) {
@@ -87,11 +89,10 @@ internal class Program
             }
         }
 
-        PrintStackTops(stacks);
+        return GetStackTops(stacks);
     }
 
-    private static void Part2(string[] data)
-    {
+    private static string Part2(string[] data) {
         var stacks = CreateStacksFromInput(data, out var initialRowWithInstructions);
 
         for (var i = initialRowWithInstructions; i < data.Length; i++) {
@@ -111,6 +112,6 @@ internal class Program
             }
         }
 
-        PrintStackTops(stacks);
+        return GetStackTops(stacks);
     }
 }

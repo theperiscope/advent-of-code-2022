@@ -6,8 +6,7 @@
         /// <summary>
         /// Read all lines fromIndex file one-by-one toIndex avoid storing all lines in memory
         /// </summary>
-        public static IEnumerable<string> ReadAllLinesFrom(string file)
-        {
+        public static IEnumerable<string> ReadAllLinesFrom(string file) {
             string line;
             using (var reader = File.OpenText(file)) {
                 while ((line = reader.ReadLine()) != null) {
@@ -16,8 +15,7 @@
             }
         }
 
-        public static int Count(this string input, string substr)
-        {
+        public static int Count(this string input, string substr) {
             int freq = 0;
 
             int index = input.IndexOf(substr);
@@ -28,8 +26,7 @@
             return freq;
         }
 
-        public static string[] TrimTrailingEndOfLine(this string[] input)
-        {
+        public static string[] TrimTrailingEndOfLine(this string[] input) {
             if (!string.IsNullOrEmpty(input[input.Length - 1]))
                 return input;
 
@@ -59,6 +56,29 @@
         public static long Mod(long a, long b) {
             var c = a % b;
             return c < 0 ? c + b : c;
+        }
+
+        /// <summary>
+        /// Splits array based into smaller chunks based on criteria function
+        /// </summary>
+        /// <remarks>
+        /// ArraySegment<T> is a wrapper around an array that delimits a range of elements in that array.
+        /// https://learn.microsoft.com/en-us/dotnet/api/system.arraysegment-1?view=net-7.0
+        /// </remarks>
+        public static IEnumerable<ArraySegment<T>> Split<T>(this T[] array, Predicate<T> split) {
+            if (array.Length == 0)
+                yield break;
+
+            var chunkStart = 0;
+            for (int i = 1; i < array.Length; i++) {
+                if (!split(array[i])) continue;
+
+                if (i - chunkStart > 0)
+                    yield return new ArraySegment<T>(array, chunkStart, i - chunkStart);
+                chunkStart = i + 1; // skip the "delimiter"
+            }
+
+            yield return new ArraySegment<T>(array, chunkStart, array.Length - chunkStart);
         }
     }
 }

@@ -5,12 +5,9 @@ namespace day02
     /// <summary>
     /// Rock, paper, scissors
     /// 
-    /// Rock beats Scissors.
-    /// Rock loses to Paper.
-    /// Paper beats Rock.
-    /// Paper loses to Scissors.
-    /// Scissors beats Paper.
-    /// Scissors loses to Rock.
+    /// Rock beats Scissors and loses to Paper.
+    /// Paper beats Rock and loses to Scissors.
+    /// Scissors beats Paper and loses to Rock.
     /// Equal moves are a Draw.
     /// </summary>
     internal class Program
@@ -33,7 +30,7 @@ namespace day02
             }
 
             // optimization: file is read only once, and line-by-line to avoid storing all lines in memory
-            var results = Utils.ReadAllLinesFrom(args[0])
+            var results = File.ReadLines(args[0])
                 .Select(line => {
                     var part1 = ScorePart1(ToMove(line[0]), ToMove(line[2]));
                     var part2 = ScorePart2(ToMove(line[0]), ToGame(line[2]));

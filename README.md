@@ -20,6 +20,7 @@ Code is written in C# and .NET 6 mostly as an opportunity to newer language feat
 * Day 1: [ArraySegment use and array split using predicate](https://github.com/theperiscope/advent-of-code-2022/blob/main/shared/Utils.cs#L55)
 * Day 1: [A note about SortedList and unique key requirements](https://github.com/theperiscope/advent-of-code-2022/blob/main/day01/Program.cs#L18)
 * Day 2: [File.ReadLines instead of File.ReadAllLines](https://github.com/theperiscope/advent-of-code-2022/blob/main/day02/Program.cs#L33)
+* Day 3: [Singe-variable bitmap to track rucksack items](https://github.com/theperiscope/advent-of-code-2022/blob/main/day03/Program.cs#L41)
 * Day 4: [Numberic interval operations](https://github.com/theperiscope/advent-of-code-2022/blob/main/shared/Interval.cs)
 * Day 6: [Unique character counting using bitmask resulting in 20x performance improvement over LINQ usage](https://github.com/theperiscope/advent-of-code-2022/commit/a8bd8e9b63aad69afcef23546046ee9c3b1c4548)
 * Day 9: [20x faster by using HashSet.UnionWith](https://github.com/theperiscope/advent-of-code-2022/commit/2cf8723d02b63c31d0ca4cdd38c134ba119b13a6)

@@ -15,7 +15,7 @@ namespace day03
 
             var (parseResults, parseTimings) = Perf.BenchmarkTime(() => Parse(args[0]));
             var input = parseResults[0];
-            Console.WriteLine($"Parsing: {input.Length} stacks in {parseTimings[0]:F2}ms");
+            Console.WriteLine($"Parsing: {input.Length} rucksacks in {parseTimings[0]:F2}ms");
 
             var (part1Results, part1Timings) = Perf.BenchmarkTime(() => Part1(input));
             var part1 = part1Results[0];
@@ -24,7 +24,7 @@ namespace day03
             var (part2Results, part2Timings) = Perf.BenchmarkTime(() => Part2(input));
             var part2 = part2Results[0];
             Console.WriteLine($"Part 2 : {part2} in {part2Timings[0]:F2}ms");
-         
+
             Console.WriteLine($"Total  : {parseTimings[0] + part1Timings[0] + part2Timings[0]:F2}ms");
         }
 
@@ -44,10 +44,13 @@ namespace day03
 
                 // 0 bit - A, 25th bit - Z, 32nd bit - a, 57th bit = z
                 // priority: 0..25th bit (A..Z): i + 27
-                // priority: 0..25th bit (A..Z): i - 32 + 1
-                for (var i = 0; i < 64; i++) {
-                    // skip unused bits
-                    if (i < 'A' - 'A' || (i > 'Z' - 'A' && i < 'a' - 'A') || i > 'z' - 'A') continue;
+                // priority: 32..57th bit (a..z): i - 32 + 1
+                for (var i = 0; i <= 25; i++) {
+                    if (((A >> i) & 1) == 1 && ((B >> i) & 1) == 1) {
+                        sum += i >= 0 && i <= 25 ? i + 27 : i - 32 + 1;
+                    }
+                }
+                for (var i = 32; i <= 57; i++) {
                     if (((A >> i) & 1) == 1 && ((B >> i) & 1) == 1) {
                         sum += i >= 0 && i <= 25 ? i + 27 : i - 32 + 1;
                     }
@@ -67,8 +70,12 @@ namespace day03
                 for (var i = 0; i < b.Length; i++) B |= 1L << (b[i] - 'A');
                 for (var i = 0; i < c.Length; i++) C |= 1L << (c[i] - 'A');
 
-                for (var i = 0; i < 64; i++) {
-                    if (i < 'A' - 'A' || (i > 'Z' - 'A' && i < 'a' - 'A') || i > 'z' - 'A') continue;
+                for (var i = 0; i <= 25; i++) {
+                    if (((A >> i) & 1) == 1 && ((B >> i) & 1) == 1 && ((C >> i) & 1) == 1) {
+                        sum += i >= 0 && i <= 25 ? i + 27 : i - 32 + 1;
+                    }
+                }
+                for (var i = 32; i <= 57; i++) {
                     if (((A >> i) & 1) == 1 && ((B >> i) & 1) == 1 && ((C >> i) & 1) == 1) {
                         sum += i >= 0 && i <= 25 ? i + 27 : i - 32 + 1;
                     }
